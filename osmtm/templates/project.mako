@@ -92,11 +92,13 @@ else:
 <script>
 <%
 from shapely.wkb import loads
-from geojson import Feature, FeatureCollection, dumps
+from geojson import Feature, FeatureCollection, dumps, loads as geojson_loads
 geometry = loads(str(project.area.geometry.data))
+dataset_geometry = loads(str(project.dataset.geometry.data)) if project.dataset is not None else None
 %>
 var project_id = ${project.id};
 var geometry = ${dumps(geometry)|n};
+var dataset_geometry = ${dumps(dataset_geometry)|n};
 % if locked_task is not None:
 window.location.hash = "task/${locked_task.id}";
 % endif

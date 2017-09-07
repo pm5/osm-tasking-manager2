@@ -26,9 +26,14 @@
         link_to_gpx = '<a href="%s" target="_blank">%s</a>' % (
           request.route_url('task_gpx', project=task.project_id, task=task.id),
           link_to_gpx_text)
+
+        link_to_geojson_text = _('.geojson file')
+        link_to_geojson = '<a href="%s" target="_blank">%s</a>' % (
+          request.route_url('task_geojson', project=task.project_id, task=task.id),
+          link_to_geojson_text)
       %>
-      ${_('Tip: Download the following ${task_gpx_link} and load it in JOSM in order to see the current task boundary',
-      mapping={'task_gpx_link': link_to_gpx}) | n}
+      ${_('Tip: Download the following ${task_gpx_link} or ${task_geojson_link} and load it in JOSM in order to see the current task boundary',
+      mapping={'task_gpx_link': link_to_gpx, 'task_geojson_link': link_to_geojson}) | n}
     </em>
   </div>
 </div>

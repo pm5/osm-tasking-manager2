@@ -27,4 +27,8 @@ stay_inside_msg = _('Do not edit outside of this box!')
     <wpt lon="${point[0]}" lat="${point[1]}"><name>${stay_inside_msg}</name></wpt>
   % endfor
 %endfor
+
+% for point in features:
+    <wpt lon="${point.x}" lat="${point.y}"></wpt>
+%endfor
 </gpx>

@@ -5,6 +5,7 @@ import shapely
 from shapely.geometry import Polygon
 from shapely.prepared import prep
 from math import floor, ceil
+import hashlib
 
 
 # Maximum resolution
@@ -111,3 +112,23 @@ def convert_to_multipolygon(features):
     geom2d = shapely.wkt.loads(wkt2d)
 
     return geom2d
+
+
+def compute_checksum(data):
+    m = hashlib.sha256()
+    m.update(data.encode('utf-8'))
+    return m.hexdigest()
+
+
+def convert_to_geometrycollection(input):
+    from shapely.geometry import shape
+    collection = geojson.loads(input,
+                               object_hook=geojson.GeoJSON.to_instance)
+    sh = shape({
+        'type': 'GeometryCollection',
+        'geometries': [
+            feature.geometry for feature in collection.features
+        ]
+    })
+
+    return 'SRID=4326;{shape}'.format(shape=sh.to_wkt())

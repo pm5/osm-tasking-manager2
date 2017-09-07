@@ -5,6 +5,7 @@ from sqlalchemy import (
     Integer,
     BigInteger,
     Unicode,
+    String,
     ForeignKey,
     ForeignKeyConstraint,
     PrimaryKeyConstraint,
@@ -566,6 +567,8 @@ class Project(Base, Translatable):
     # whether the validation should require the validator role or not
     requires_experienced_mapper_role = Column(Boolean, default=False)
 
+    dataset = relationship('Dataset', uselist=False, backref='project')
+
     def __init__(self, name, user=None):
         self.name = name
         self.author = user
@@ -619,14 +622,14 @@ class Project(Base, Translatable):
             .filter(
                 Task.project_id == self.id,
                 Task.cur_state.has(TaskState.state != TaskState.state_removed)
-            ) \
+        ) \
             .scalar()
 
         done = DBSession.query(func.sum(ST_Area(Task.geometry))) \
             .filter(
                 Task.project_id == self.id,
                 Task.cur_state.has(TaskState.state == TaskState.state_done)
-            ) \
+        ) \
             .scalar()
 
         if not done:
@@ -639,7 +642,7 @@ class Project(Base, Translatable):
             .filter(
                 Task.project_id == self.id,
                 Task.cur_state.has(TaskState.state != TaskState.state_removed)
-            ) \
+        ) \
             .scalar()
 
         validated = DBSession.query(func.sum(ST_Area(Task.geometry))) \
@@ -647,7 +650,7 @@ class Project(Base, Translatable):
                 Task.project_id == self.id,
                 Task.cur_state.has(
                     TaskState.state == TaskState.state_validated)
-            ) \
+        ) \
             .scalar()
 
         if not validated:
@@ -786,5 +789,48 @@ class ExtendedJSONEncoder(JSONEncoder):
 
         return JSONEncoder.default(self, obj)
 
+
+class Dataset(Base):
+    __tablename__ = 'dataset'
+    id = Column(Integer, primary_key=True)
+
+    name = Column(Unicode)
+    project_id = Column(Integer, ForeignKey('project.id'))
+    created = Column(DateTime, default=datetime.datetime.utcnow)
+    license_id = Column(Integer, ForeignKey('licenses.id'))
+    data = Column(Unicode)
+    geometry = Column(Geometry('GeometryCollection', srid=4326))
+    checksum = Column(String)
+
+    def __init__(self, name=None, project_id=None, data=None, license_id=None, checksum=None, geometry=None):
+        self.name = name
+        self.project_id = project_id
+        self.data = data
+        self.geometry = geometry
+        self.license_id = license_id
+        self.checksum = checksum
+
+
+class TaskData(Base):
+    __tablename__ = 'task_data'
+    id = Column(Integer, primary_key=True)
+
+    project_id = Column(Integer)
+    task_id = Column(Integer)
+    dataset_id = Column(Integer, ForeignKey('dataset.id'))
+    dataset = relationship(Dataset)
+    created = Column(DateTime, default=datetime.datetime.utcnow)
+    data = Column(Unicode)
+    geometry = Column(Geometry('GeometryCollection', srid=4326))
+    checksum = Column(String)
+
+    __table_args__ = (ForeignKeyConstraint([task_id, project_id],
+                                           ['task.id', 'task.project_id']),
+                      Index('task_data_task_project_index',
+                            'task_id',
+                            'project_id'),
+                      Index('task_data_dataset_index',
+                            'dataset_id'),
+                      {})
 
 dumps = functools.partial(_dumps, cls=ExtendedJSONEncoder)

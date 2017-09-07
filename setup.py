@@ -28,7 +28,6 @@ requires = [
     'sqlalchemy-i18n==0.8.4',
     'WebTest==2.0.14',
     'simplejson',
-    'geojson==1.0.6',
     'webhelpers==1.3',
     'alembic==0.6.4',
     'transifex-client',
@@ -64,6 +63,7 @@ setup(name='osmtm',
       main = osmtm:main
       [console_scripts]
       initialize_osmtm_db = osmtm.scripts.initializedb:main
+      generate_datalayers = osmtm.scripts.generatedatalayers:main
       """,
       message_extractors={'osmtm': [
           ('**.py', 'python', None),

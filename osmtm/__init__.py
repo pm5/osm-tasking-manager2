@@ -123,6 +123,7 @@ def main(global_config, **settings):
                      '/project/{project:\d+}/task/{task:\d+}/comment',
                      xhr=True)
     config.add_route('task_gpx', '/project/{project:\d+}/task/{task:\d+}.gpx')
+    config.add_route('task_geojson', '/project/{project:\d+}/task/{task:\d+}.geojson')
     config.add_route('task_osm', '/project/{project:\d+}/task/{task:\d+}.osm')
     config.add_route('task_assign',
                      '/project/{project:\d+}/task/{task:\d+}/user/{user}',

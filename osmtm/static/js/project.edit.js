@@ -70,6 +70,26 @@ function allowedUsersCrtl($scope) {
 }
 angular.module('allowed_users', []);
 
+function taskMap(id) {
+  var map = L.map(id);
+  var osmUrl='//tile-{s}.openstreetmap.fr/hot/{z}/{x}/{y}.png';
+  var osmAttrib='Map data © OpenStreetMap contributors';
+  var osmLayer = new L.TileLayer(osmUrl, {attribution: osmAttrib})
+  map.addLayer(osmLayer);
+
+  var layer = new L.geoJson(geometry, {
+    style: {
+      fillOpacity: 0.1,
+      weight: 1.5
+    }
+  });
+  map.addLayer(layer);
+  map.fitBounds(layer.getBounds());
+  map.zoomOut();
+
+  return map;
+}
+
 osmtm = {};
 osmtm.project = {};
 osmtm.project.edit = {};
@@ -84,22 +104,7 @@ osmtm.project.edit.priority_areas = (function() {
     if (lmap) {
       return;
     }
-    lmap = L.map('leaflet_priority_areas');
-    // create the tile layer with correct attribution
-    var osmUrl='//tile-{s}.openstreetmap.fr/hot/{z}/{x}/{y}.png';
-    var osmAttrib='Map data © OpenStreetMap contributors';
-    var osm = new L.TileLayer(osmUrl, {attribution: osmAttrib});
-    lmap.addLayer(osm);
-
-    var layer = new L.geoJson(geometry, {
-      style: {
-        fillOpacity: 0.1,
-        weight: 1.5
-      }
-    });
-    lmap.addLayer(layer);
-    lmap.fitBounds(layer.getBounds());
-    lmap.zoomOut();
+    lmap = taskMap('leaflet_priority_areas');
 
     var style = {
       color: 'red',
@@ -176,6 +181,41 @@ osmtm.project.edit.priority_areas = (function() {
   };
 })();
 
+osmtm.project.edit.dataset = (function() {
+  var lmap;
+
+  function createDatasetMap() {
+    if (lmap) {
+      return;
+    }
+    lmap = taskMap('leaflet_dataset');
+
+    layer = new L.GeoJSON(dataset_geometry, {
+      pointToLayer: function(feature, latlng) {
+        return L.circleMarker(latlng, {
+          radius: 4,
+          fillColor: "#ff7800",
+          color: "#000",
+          width: 1,
+          opacity: 1,
+          fillOpacity: 0.8
+        });
+      }
+    });
+    lmap.addLayer(layer);
+  }
+
+  return {
+    init: function() {
+      $('a[data-toggle="tab"]').on('shown.bs.tab', function(e) {
+        if (e.target.id == 'dataset_tab') {
+          createDatasetMap();
+        }
+      });
+    }
+  }
+})();
+
 /*
   Handles invalidate all feature
 */
@@ -237,6 +277,7 @@ function messageAll(e) {
 
 $(document).ready(function() {
   osmtm.project.edit.priority_areas.init();
+  osmtm.project.edit.dataset.init();
   $(document).on('click', '.btn-invalidate-all', invalidateAll);
   $(document).on('click', '.btn-message-all', messageAll);
 });

@@ -119,6 +119,19 @@ osmtm.project = (function() {
       }
     });
     lmap.addLayer(layer);
+    var datalayer = new L.geoJson(dataset_geometry, {
+      pointToLayer: function(feature, latlng) {
+        return L.circleMarker(latlng, {
+          radius: 4,
+          fillColor: "#ff7800",
+          color: "#000",
+          width: 1,
+          opacity: 1,
+          fillOpacity: 0.8
+        });
+      }
+    });
+    lmap.addLayer(datalayer);
     lmap.fitBounds(layer.getBounds());
     lmap.zoomOut();
 

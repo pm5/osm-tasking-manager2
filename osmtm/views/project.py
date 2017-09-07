@@ -13,6 +13,7 @@ from ..models import (
     TaskLock,
     Label,
     License,
+    Dataset,
 )
 
 from pyramid.security import authenticated_userid
@@ -57,10 +58,14 @@ from .task import get_locked_task, add_comment, send_message
 from ..utils import (
     parse_geojson,
     convert_to_multipolygon,
+    convert_to_geometrycollection,
     get_tiles_in_geom,
+    compute_checksum,
 )
 
 from user import username_to_userid
+
+import os
 
 import logging
 log = logging.getLogger(__name__)
@@ -167,7 +172,7 @@ def project_new_grid(request):
         project.auto_fill(zoom)
 
         request.session.flash(_("Project #${project_id} created successfully",
-                              mapping={'project_id': project.id}),
+                                mapping={'project_id': project.id}),
                               'success')
         return HTTPFound(location=route_path('project_edit', request,
                                              project=project.id))
@@ -199,7 +204,7 @@ def project_new_arbitrary(request):
                      mapping={'n': count}),
             'success')
         return HTTPFound(location=route_path('project_edit', request,
-                         project=project.id))
+                                             project=project.id))
     except Exception, e:
         msg = _("Sorry, could not create the project. <br />%s") % e.message
         request.session.flash(msg, 'alert')
@@ -305,6 +310,21 @@ def project_edit(request):
         for area in project.priority_areas:
             DBSession.delete(area)
         project.priority_areas[:] = []
+
+        if 'dataset_name' in request.params:
+            dataset_file = request.POST['dataset_file'].file
+            dataset_name = request.params.get('dataset_name')
+            data = dataset_file.read().decode('utf-8')
+            geometry = convert_to_geometrycollection(data)
+            dataset = Dataset(
+                project_id=project.id,
+                name=dataset_name,
+                data=data,
+                geometry=geometry,
+                checksum=compute_checksum(data),
+            )
+            DBSession.add(dataset)
+
         DBSession.flush()
 
         priority_areas = request.params.get('priority_areas', '')
@@ -318,7 +338,7 @@ def project_edit(request):
 
         DBSession.add(project)
         return HTTPFound(location=route_path('project', request,
-                         project=project.id))
+                                             project=project.id))
 
     translations = project.translations.items()
 
@@ -727,7 +747,7 @@ def get_stats(project):
         .filter(
             Task.cur_state.has(TaskState.state != TaskState.state_removed),
             Task.project_id == project.id
-        ) \
+    ) \
         .scalar()
 
     subquery = DBSession.query(

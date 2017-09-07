@@ -122,8 +122,10 @@
 from shapely.wkb import loads
 from geojson import Feature, FeatureCollection, dumps
 geometry = loads(str(project.area.geometry.data))
+dataset_geometry = loads(str(project.dataset.geometry.data)) if project.dataset is not None else None
 %>
   var geometry = ${dumps(geometry)|n};
+  var dataset_geometry = ${dumps(dataset_geometry)|n}
   var priority_areas = ${dumps(priority_areas)|n};
 </script>
 <div class="container">
@@ -135,6 +137,7 @@ geometry = loads(str(project.area.geometry.data))
           <li><a href="#instructions" data-toggle="tab">${_('Instructions')}</a></li>
           <li><a href="#area" data-toggle="tab">${_('Area')}</a></li>
           <li><a href="#imagery" data-toggle="tab">${_('Imagery')}</a></li>
+          <li><a id="dataset_tab" href="#dataset" data-toggle="tab">${_('Dataset')}</a><li>
           <li><a id="priority_areas_tab" href="#priority_areas" data-toggle="tab">${_('Priority Areas')}</a></li>
           <li><a href="#permissions" data-toggle="tab">${_('Permissions')}</a></li>
           <li><a href="#labels" data-toggle="tab">${_('Labels')}</a></li>
@@ -152,6 +155,9 @@ geometry = loads(str(project.area.geometry.data))
           </div>
           <div class="tab-pane" id="imagery">
             ${imagery()}
+          </div>
+          <div class="tab-pane" id="dataset">
+            ${dataset()}
           </div>
           <div class="tab-pane" id="priority_areas">
             ${priority_areas_()}
@@ -396,6 +402,27 @@ geometry = loads(str(project.area.geometry.data))
         % endfor
       </select>
     </div>
+  </div>
+</div>
+</%block>
+
+<%block name="dataset">
+<div class="row">
+  <div class="col-md-4">
+    <label class="control-label" for="id_dataset_name">${_('Dataset Name')}</label>
+    <input type="text" id="id_dataset_name"
+           name="dataset_name"
+           class="form-control"
+           value=""/>
+    <label for="id_dataset_file" class="control-label">${_('Dataset File')}</label>
+    <input id="id_dataset_file" type="file" name="dataset_file"
+           accept="application/octet">
+  </div>
+  <div class="col-md-8">
+    <div id="leaflet_dataset"></div>
+    <%
+      from geojson import dumps
+    %>
   </div>
 </div>
 </%block>

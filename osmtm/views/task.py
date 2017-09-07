@@ -13,6 +13,7 @@ from ..models import (
     TaskComment,
     PriorityArea,
     Project,
+    TaskData,
     User,
     Message,
 )
@@ -40,6 +41,8 @@ import datetime
 import random
 import re
 import transaction
+import geojson
+import shapely.geometry
 
 from ..models import EXPIRATION_DELTA, ST_SetSRID
 from user import username_to_userid
@@ -137,7 +140,7 @@ def task_xhr(request):
     ancestors = get_task_ancestors(task_id, project_id)
 
     filter = and_(and_(TaskState.task_id.in_(ancestors),
-                  TaskState.project_id == project_id),
+                       TaskState.project_id == project_id),
                   TaskState.state != TaskState.state_ready)
     states = DBSession.query(TaskState).filter(filter) \
         .order_by(TaskState.date).all()
@@ -553,10 +556,34 @@ def task_assign_delete(request):
 @view_config(route_name='task_gpx', renderer='task.gpx.mako')
 def task_gpx(request):
     task = __get_task(request)
+    datalayer = __get_datalayer(task)
     request.response.headerlist.append(('Access-Control-Allow-Origin',
                                         'http://www.openstreetmap.org'))
+    collection = geojson.loads(datalayer.data)
+    features = [
+        shapely.geometry.shape(feature.geometry)
+        for feature in collection.features]
     return dict(multipolygon=shape.to_shape(task.geometry),
+                features=features,
                 project_id=task.project_id)
+
+
+def __get_datalayer(task):
+    filter = and_(
+        TaskData.project_id == task.project_id,
+        TaskData.task_id == task.id)
+    query = DBSession.query(TaskData).filter(filter)
+    try:
+        return query.one()
+    except NoResultFound:
+        return None
+
+
+@view_config(route_name='task_geojson', renderer='json')
+def task_geojson(request):
+    task = __get_task(request)
+    datalayer = __get_datalayer(task)
+    return geojson.loads(datalayer.data) if datalayer is not None else None
 
 
 @view_config(route_name='task_osm', renderer='task.osm.mako')
